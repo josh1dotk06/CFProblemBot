@@ -4,6 +4,10 @@ import discord #import discord library in here
 from discord import app_commands
 from discord.ext import commands
 
+#import our custom stuff from client and user_store
+from codeforces.client import get_user_info, CodeforcesAPIError
+from storage.user_store import connect_user
+
 class BasicCommands(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
@@ -15,14 +19,29 @@ class BasicCommands(commands.Cog):
 
 
 
-
+    #modifying this on second iteration
     @app_commands.command(name="connect", description="Connect your Codeforces handle.")
     @app_commands.describe(codeforces_handle="Your Codeforces username/handle.")
     async def connect(self, interaction: discord.Interaction, codeforces_handle: str):
-        await interaction.response.send_message(f"Placeholder: connected Discord user `{interaction.user}` to Codeforces handle `{codeforces_handle}`.")
+        #await interaction.response.send_message(f"Placeholder: connected Discord user `{interaction.user}` to Codeforces handle `{codeforces_handle}`.")
         #continue stuff here or something 
 
+        await interaction.response.defer()
 
+        try:
+            #get cf data
+            user_info = await get_user_info(codeforces_handle)
+        except CodeforcesAPIError as error:
+            await interaction.followup.send(f"Could not connect that handle: `{error}`")
+            return
+
+        #"handle":"tourist" eg
+        confirmed_handle = user_info["handle"]
+        discord_id = interaction.user.id
+
+        #connect (load into JSON)
+        connect_user(discord_id, confirmed_handle)
+        await interaction.followup.send(f"Successfully connected your Discord account to Codeforces handle `{confirmed_handle}`.")
 
     @app_commands.command(name="generate", description="Generate Codeforces problem recommendations.")
     @app_commands.describe(
