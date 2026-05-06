@@ -65,17 +65,19 @@ class BasicCommands(commands.Cog):
         exact_match: bool = False,
         count: app_commands.Range[int, 1, 10] = 1
     ):
-        await interaction.response.send_message(
-            "Placeholder generate command received.\n"
-            f"unseen: `{unseen}`\n"
-            f"min_rating: `{min_rating}`\n"
-            f"max_rating: `{max_rating}`\n"
-            f"include_tags: `{include_tags}`\n"
-            f"exclude_tags: `{exclude_tags}`\n"
-            f"exact_match: `{exact_match}`\n"
-            f"count: `{count}`"
-        )
+        # await interaction.response.send_message(
+        #     "Placeholder generate command received.\n"
+        #     f"unseen: `{unseen}`\n"
+        #     f"min_rating: `{min_rating}`\n"
+        #     f"max_rating: `{max_rating}`\n"
+        #     f"include_tags: `{include_tags}`\n"
+        #     f"exclude_tags: `{exclude_tags}`\n"
+        #     f"exact_match: `{exact_match}`\n"
+        #     f"count: `{count}`"
+        # )
         #continue stuff, just testing yknow
+
+        
 
 
 async def setup(bot: commands.Bot):
