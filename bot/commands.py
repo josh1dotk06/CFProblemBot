@@ -5,8 +5,11 @@ from discord import app_commands
 from discord.ext import commands
 
 #import our custom stuff from client and user_store
-from codeforces.client import get_user_info, CodeforcesAPIError
+from codeforces.client import get_user_info, CodeforcesAPIError, get_problemset
 from storage.user_store import connect_user
+
+#generating random problem
+import random 
 
 class BasicCommands(commands.Cog):
 
@@ -77,7 +80,28 @@ class BasicCommands(commands.Cog):
         # )
         #continue stuff, just testing yknow
 
-        
+        await interaction.response.defer()
+
+        problemset = await get_problemset()
+
+        randVar = random.randint(0, len(problemset["problems"]) - 1)
+        problem = problemset["problems"][randVar]
+        print(problem)
+
+        name = problem.get("name")
+        contest_id = problem.get("contestId")
+        index = problem.get("index")
+        rating = problem.get("rating")
+        tags = problem.get("tags")
+        problem_url = f"https://codeforces.com/problemset/problem/{contest_id}/{index}"
+
+
+        await interaction.followup.send(
+            f"**{name}**\n"
+            f"Rating: `{rating}`\n"
+            f"Tags: `{', '.join(tags) if tags else 'No tags'}`\n"
+            f"{problem_url}"
+        )
 
 
 async def setup(bot: commands.Bot):
