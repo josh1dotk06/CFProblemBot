@@ -11,6 +11,8 @@ from storage.user_store import connect_user
 #generating random problem
 import random 
 
+from recommender.filters import (filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags)
+
 class BasicCommands(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
@@ -84,8 +86,18 @@ class BasicCommands(commands.Cog):
 
         problemset = await get_problemset()
 
-        randVar = random.randint(0, len(problemset["problems"]) - 1)
-        problem = problemset["problems"][randVar]
+        problemset = problemset["problems"]
+
+        #testing the 4 basic filters first
+        include_tag_list = parse_tags(include_tags)
+        exclude_tag_list = parse_tags(exclude_tags)
+
+        problemset = filter_by_rating(problemset, min_rating, max_rating)
+        problemset = filter_by_include_tags(problemset, include_tag_list)
+        problemset = filter_by_exclude_tags(problemset, exclude_tag_list)
+
+        randVar = random.randint(0, len(problemset) - 1)
+        problem = problemset[randVar]
         print(problem)
 
         name = problem.get("name")
