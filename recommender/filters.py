@@ -23,7 +23,7 @@ def filter_by_rating(problems: list[dict], min_rating: int | None, max_rating: i
 
 def parse_tags(tags_text: str | None) -> list[str]:
     #Convert a comma separated tag string into a clean list of tags eg: "greedy, binary search" to ["greedy", "binary search"]
-
+    #we need to convert discord input into a list. We need this so we can compare desired input with the list format for tags in the JSON
     if tags_text is None:
         return []
 
@@ -60,6 +60,23 @@ def filter_by_include_tags(problems: list[dict], include_tags: list[str]) -> lis
 
     return filtered
 
+def filter_by_exact_tags(problems: list[dict], exact_tags: list[str]) -> list[dict]:
+    #use sets instead of list, convert list into set thus
+    if not exact_tags:
+        return problems
+
+    filtered = []
+    exact_tag_set = set(exact_tags)
+
+    #the idea is to just set-ialize the lists and just compare them so they are both exactly the same. List comparison wouldnt work since they are order sensitive
+    for problem in problems:
+        problem_tags = problem.get("tags", [])
+        problem_tag_set = set(problem_tags)
+
+        if problem_tag_set == exact_tag_set:
+            filtered.append(problem)
+
+    return filtered
 
 def filter_by_exclude_tags(problems: list[dict], exclude_tags: list[str]) -> list[dict]:
 
@@ -69,6 +86,7 @@ def filter_by_exclude_tags(problems: list[dict], exclude_tags: list[str]) -> lis
         problem_tags = problem.get("tags", [])
         is_allowed = True
 
+        #for each of the problem, we ensure that the tags in excluded tags is NOT in the problem tags
         for tag in exclude_tags:
             if tag not in problem_tags:
                 continue

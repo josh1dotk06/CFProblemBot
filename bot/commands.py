@@ -11,7 +11,7 @@ from storage.user_store import connect_user
 #generating random problem
 import random 
 
-from recommender.filters import (filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags)
+from recommender.filters import (filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags)
 
 class BasicCommands(commands.Cog):
 
@@ -85,16 +85,19 @@ class BasicCommands(commands.Cog):
         await interaction.response.defer()
 
         problemset = await get_problemset()
-
+        #only consider the actual problems right now (not problemStatistics)
         problemset = problemset["problems"]
 
         #testing the 4 basic filters first
         include_tag_list = parse_tags(include_tags)
         exclude_tag_list = parse_tags(exclude_tags)
-
         problemset = filter_by_rating(problemset, min_rating, max_rating)
         problemset = filter_by_include_tags(problemset, include_tag_list)
-        problemset = filter_by_exclude_tags(problemset, exclude_tag_list)
+
+        if exact_match == True:
+            problemset = filter_by_exact_tags(problemset, include_tag_list)
+        else:
+            problemset = filter_by_exclude_tags(problemset, exclude_tag_list)
 
         randVar = random.randint(0, len(problemset) - 1)
         problem = problemset[randVar]
