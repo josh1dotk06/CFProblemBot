@@ -50,7 +50,7 @@ class BasicCommands(commands.Cog):
         await interaction.followup.send(f"Successfully connected your Discord account to Codeforces handle `{confirmed_handle}`.")
 
     @app_commands.command(name="generate", description="Generate Codeforces problem recommendations.")
-    @app_commands.describe(
+    @app_commands.describe( #these are the options you can select
         unseen="Only recommend problems you have not solved yet.",
         min_rating="Minimum Codeforces problem rating.",
         max_rating="Maximum Codeforces problem rating.",
@@ -59,7 +59,7 @@ class BasicCommands(commands.Cog):
         exact_match="Only allow problems with exactly the included tags.",
         count="Number of problems to generate."
     )
-
+    #initialize to default values
     async def generate(
         self,
         interaction: discord.Interaction,
@@ -121,27 +121,35 @@ class BasicCommands(commands.Cog):
             problemset = filter_by_exclude_tags(problemset, exclude_tag_list)
 
         
+        #with lots of filters, it can get to the point where the number of valid problems are so little that its less than the desired count number
+        actual_count = min(count, len(problemset))
+        selected_problems = random.sample(problemset, actual_count)
 
-        randVar = random.randint(0, len(problemset) - 1)
-        problem = problemset[randVar]
-        print(problem)
+        response = []
 
-        name = problem.get("name")
-        contest_id = problem.get("contestId")
-        index = problem.get("index")
-        rating = problem.get("rating")
-        tags = problem.get("tags")
-        problem_url = f"https://codeforces.com/problemset/problem/{contest_id}/{index}"
+        #neat little heads up message
+        if actual_count < count:
+            await interaction.followup.send(f"There does not exist {count} problems with the specified filters, so below are {actual_count} problems")
+
+        for problem in selected_problems:
+            name = problem.get("name")
+            contest_id = problem.get("contestId")
+            index = problem.get("index")
+            rating = problem.get("rating")
+            tags = problem.get("tags")
+            problem_url = f"https://codeforces.com/problemset/problem/{contest_id}/{index}"
 
 
-        await interaction.followup.send(
-            f"**{name}**\n"
-            f"Rating: `{rating}`\n"
-            f"Tags: `{', '.join(tags) if tags else 'No tags'}`\n"
-            f"{problem_url}"
-        )
+            response.append(
+                f"**{name}**\n"
+                f"Rating: `{rating}`\n"
+                f"Tags: `{', '.join(tags) if tags else 'No tags'}`\n"
+                f"{problem_url}"
+            )
 
+        await interaction.followup.send("\n\n".join(response))
 
 async def setup(bot: commands.Bot):
+
     await bot.add_cog(BasicCommands(bot)) #add cog BasicCommands to bot
 

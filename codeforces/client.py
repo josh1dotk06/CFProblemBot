@@ -43,5 +43,6 @@ async def get_user_info(handle: str) -> dict:
     return result[0]
 
 #get all submissions for a specific handle
+
 async def get_user_submissions(handle: str) -> list[dict]:
-    return await _get("user.status", {"handles": handle})
+    return await _get("user.status", {"handle": handle})
