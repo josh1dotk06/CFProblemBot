@@ -42,3 +42,6 @@ async def get_user_info(handle: str) -> dict:
     #explaination for result[0], essentially the result key points to a list of dictionaries, but theres only 1 dictionary containing all the data, thus result[0] IS that dictionary
     return result[0]
 
+#get all submissions for a specific handle
+async def get_user_submissions(handle: str) -> list[dict]:
+    return await _get("user.status", {"handles": handle})

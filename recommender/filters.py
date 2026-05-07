@@ -1,3 +1,29 @@
+### HELPERS
+def get_problem_id(problem: dict) -> str | None:
+    contestId = problem.get("contestId")
+    index = problem.get("index")
+
+    if contestId is None or index is None:
+        return None
+
+    #unique problem identifier
+    return f"{contestId}{index}"
+
+
+def build_solved_problems(submissions: list[dict]) -> set[str]:
+    solved_problems = set()
+
+    for submission in submissions:
+        if submission.get("verdict") != "OK": #solved
+            continue
+
+        problem = submission.get("problem", {})
+        pId = get_problem_id(problem)
+        if pId is not None:
+            solved_problems.add(pId)
+
+    return solved_problems
+
 
 def filter_by_rating(problems: list[dict], min_rating: int | None, max_rating: int | None) -> list[dict]:
     #lets keep only the problems within the range
@@ -100,7 +126,21 @@ def filter_by_exclude_tags(problems: list[dict], exclude_tags: list[str]) -> lis
     return filtered
 
 
+def filter_by_unseen(problems: list[dict], solved_problems: set[str]) -> list[dict]:
+    filtered = []
+
+    for problem in problems:
+        problem_id = get_problem_id(problem)
+
+        if problem_id is None:
+            continue
+
+        if problem_id in solved_problems:
+            continue
+
+        filtered.append(problem)
             
+    return filtered
 
 
             

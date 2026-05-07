@@ -5,13 +5,14 @@ from discord import app_commands
 from discord.ext import commands
 
 #import our custom stuff from client and user_store
-from codeforces.client import get_user_info, CodeforcesAPIError, get_problemset
-from storage.user_store import connect_user
+from codeforces.client import get_user_info, CodeforcesAPIError, get_problemset, get_user_submissions
+from storage.user_store import connect_user, get_handle
 
 #generating random problem
 import random 
 
-from recommender.filters import (filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags)
+from recommender.filters import (filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags, build_solved_problems, filter_by_unseen)
+
 
 class BasicCommands(commands.Cog):
 
@@ -91,13 +92,35 @@ class BasicCommands(commands.Cog):
         #testing the 4 basic filters first
         include_tag_list = parse_tags(include_tags)
         exclude_tag_list = parse_tags(exclude_tags)
+
+        ###UNSEEN FILTER APPLY
+        if unseen:
+            handle = get_handle(interaction.user.id)
+
+            if handle is None:
+                await interaction.followup.send("You need to connect your Codeforces handle first using '/connect' before using 'unseen=True'.")
+                return
+
+            try:
+                submissions = await get_user_submissions(handle)
+            except CodeforcesAPIError as error:
+                await interaction.followup.send(f"could not fetch your codeforces submissions: {error}")
+                return
+
+            solved_problems = build_solved_problems(submissions)
+            problemset = filter_by_unseen(problemset, solved_problems)
+
+        ### APPLY RATING AND INCLUDED TAGS
         problemset = filter_by_rating(problemset, min_rating, max_rating)
         problemset = filter_by_include_tags(problemset, include_tag_list)
 
+        ##FILTER EXACT TAGS OR EXCLUDED TAGS
         if exact_match == True:
             problemset = filter_by_exact_tags(problemset, include_tag_list)
         else:
             problemset = filter_by_exclude_tags(problemset, exclude_tag_list)
+
+        
 
         randVar = random.randint(0, len(problemset) - 1)
         problem = problemset[randVar]
