@@ -34,7 +34,7 @@ async def get_problemset() -> dict:
 
 
 async def get_user_info(handle: str) -> dict:
-    result = _get("user.info", {"handles": handle})
+    result = await _get("user.info", {"handles": handle})
     
     if len(result)==0:
         raise CodeforcesAPIError("No user was found with that handle on codeforces")
@@ -46,3 +46,10 @@ async def get_user_info(handle: str) -> dict:
 
 async def get_user_submissions(handle: str) -> list[dict]:
     return await _get("user.status", {"handle": handle})
+
+
+#contest return so we can utilize timeseconds for date filtering
+async def get_contest() -> list[dict]:
+    return await _get("contest.list")
+
+

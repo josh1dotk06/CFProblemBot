@@ -1,17 +1,29 @@
-from typing import Optional
+from typing import Optional, Literal
+from datetime import datetime, timezone
 
 import discord #import discord library in here
 from discord import app_commands
 from discord.ext import commands
 
 #import our custom stuff from client and user_store
-from codeforces.client import get_user_info, CodeforcesAPIError, get_problemset, get_user_submissions
+from codeforces.client import get_user_info, CodeforcesAPIError, get_problemset, get_user_submissions, get_contest
 from storage.user_store import connect_user, get_handle
 
 #generating random problem
 import random 
 
-from recommender.filters import (filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags, build_solved_problems, filter_by_unseen)
+from recommender.filters import (build_contest_start_time, filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags, build_solved_problems, filter_by_unseen, filter_by_date)
+
+##HELPER
+
+def time_conversion(datestr: str) -> int:
+    #date will be something like 05/12/2019 i.e DD/MM/YYYY
+    #since unix of 01/01/1970
+
+    date = datetime.strptime(datestr, "%d/%m/%Y")
+    date = date.replace(tzinfo=timezone.utc) #coordinates universal time, not local to account for timezone shifts
+    unix_timestamp = int(date.timestamp())
+    return unix_timestamp
 
 
 class BasicCommands(commands.Cog):
@@ -57,7 +69,8 @@ class BasicCommands(commands.Cog):
         include_tags="Comma separated tags to include, like greedy,binary search.",
         exclude_tags="Comma separated tags to exclude, like dp,math.",
         exact_match="Only allow problems with exactly the included tags.",
-        count="Number of problems to generate."
+        count="Number of problems to generate.",
+        date_limit="Filter by date 'DD/MM/YYYY, e.g., '01/01/2024' or '31/12/2023'."
     )
     #initialize to default values
     async def generate(
@@ -69,7 +82,10 @@ class BasicCommands(commands.Cog):
         include_tags: Optional[str] = None,
         exclude_tags: Optional[str] = None,
         exact_match: bool = False,
-        count: app_commands.Range[int, 1, 10] = 1
+        count: app_commands.Range[int, 1, 10] = 1,
+        time_direction: Optional[Literal["before", "after"]] = None,
+        date_limit: Optional[str] = None
+        
     ):
         # await interaction.response.send_message(
         #     "Placeholder generate command received.\n"
@@ -84,6 +100,20 @@ class BasicCommands(commands.Cog):
         #continue stuff, just testing yknow
 
         await interaction.response.defer()
+
+        #date filtering logic
+        target_timestamp = None
+        if time_direction or date_limit:
+            if not time_direction or not date_limit:
+                await interaction.followup.send("To filter by date, you must provide BOTH 'time_direction' and 'date_limit'.")
+                return
+
+            try:
+                cleaned_date = date_limit.strip()
+                target_timestamp = time_conversion(cleaned_date)
+            except ValueError:
+                await interaction.followup.send("Invalid date format. Please use exact DD/MM/YYYY (e.g., 05/12/2023).")
+                return
 
         problemset = await get_problemset()
         #only consider the actual problems right now (not problemStatistics)
@@ -120,7 +150,23 @@ class BasicCommands(commands.Cog):
         else:
             problemset = filter_by_exclude_tags(problemset, exclude_tag_list)
 
+        ##FILTER BEFORE/AFTER DATE
+        if target_timestamp is not None and time_direction is not None:
+            try:
+                contests = await get_contest()
+            except CodeforcesAPIError as error:
+                await interaction.followup.send(f"Could not fetch contests: `{error}`")
+                return
+
+            contest_start_times = build_contest_start_time(contests)
+            problemset = filter_by_date(problemset, target_timestamp, time_direction, contest_start_times)
         
+        
+        #with lots of filters, it can get to the point where the number of valid problems are literally zero
+        if len(problemset) == 0:
+            await interaction.followup.send("No problems matched your filters. Try widening the rating range, removing tags, or changing the date filter.")
+            return
+
         #with lots of filters, it can get to the point where the number of valid problems are so little that its less than the desired count number
         actual_count = min(count, len(problemset))
         selected_problems = random.sample(problemset, actual_count)
@@ -129,7 +175,7 @@ class BasicCommands(commands.Cog):
 
         #neat little heads up message
         if actual_count < count:
-            await interaction.followup.send(f"There does not exist {count} problems with the specified filters, so below are {actual_count} problems")
+            response.append(f"There does not exist {count} problems with the specified filters, so below are {actual_count} problems")
 
         for problem in selected_problems:
             name = problem.get("name")

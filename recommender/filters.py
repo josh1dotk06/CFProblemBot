@@ -25,6 +25,29 @@ def build_solved_problems(submissions: list[dict]) -> set[str]:
     return solved_problems
 
 
+def build_contest_start_time(contests: list[dict]) -> dict[int, int]:
+    """{
+    1703: 1659200000,
+    1800: 1670000000
+}
+    """
+
+    contest_start_times = {}
+    for contest in contests:
+        contest_id = contest.get("id")
+        contest_start = contest.get("startTimeSeconds")
+
+        if contest_id is None or contest_start is None:
+            continue
+
+        contest_start_times[contest_id] = contest_start
+
+    return contest_start_times
+
+
+
+###ACTUAL FILTERS
+
 def filter_by_rating(problems: list[dict], min_rating: int | None, max_rating: int | None) -> list[dict]:
     #lets keep only the problems within the range
      filtered = []
@@ -143,5 +166,29 @@ def filter_by_unseen(problems: list[dict], solved_problems: set[str]) -> list[di
     return filtered
 
 
-            
+def filter_by_date(problems: list[dict], time: int | None, direction: str | None, contest_start_times: dict[int, int]) -> list[dict]:
+
+    if time is None or direction is None:
+        return problems
+
+    filtered = []
+
+    for problem in problems:
+        contest_id = problem.get("contestId")
+        if contest_id is None:
+            continue
+
+        pTime = contest_start_times[contest_id]
+        if pTime is None:
+            continue
+    
+        if direction == "after":
+            if pTime >= time:
+                filtered.append(problem)
+        elif direction == "before":
+            if pTime <= time:
+                filtered.append(problem)
+
+    return filtered
+
 
