@@ -3,3 +3,4 @@
 __pycache__/
 *.pyc
 data/users.json
+local_html/
