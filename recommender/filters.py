@@ -1,3 +1,6 @@
+
+from scraper.problem_length_scraper import load_problem_length
+
 ### HELPERS
 def get_problem_id(problem: dict) -> str | None:
     contestId = problem.get("contestId")
@@ -190,5 +193,29 @@ def filter_by_date(problems: list[dict], time: int | None, direction: str | None
                 filtered.append(problem)
 
     return filtered
+
+
+def filter_by_length(problems: list[dict], length: str) ->list[dict]:
+
+    if length is None:
+        return problems
+
+    filtered = []
+    problem_lengths = load_problem_length()
+
+
+    for problem in problems:
+        problem_id = get_problem_id(problem)
+        length_info = problem_lengths.get(problem_id)
+
+        if length_info is None:
+            continue
+
+        if length_info.get("length") == length:
+            filtered.append(problem)
+    
+
+    return filtered
+
 
 

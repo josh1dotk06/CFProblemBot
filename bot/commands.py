@@ -12,7 +12,7 @@ from storage.user_store import connect_user, get_handle
 #generating random problem
 import random 
 
-from recommender.filters import (build_contest_start_time, filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags, build_solved_problems, filter_by_unseen, filter_by_date)
+from recommender.filters import (build_contest_start_time, filter_by_rating, filter_by_include_tags, filter_by_exclude_tags, parse_tags, filter_by_exact_tags, build_solved_problems, filter_by_unseen, filter_by_date, filter_by_length)
 
 ##HELPER
 
@@ -70,7 +70,8 @@ class BasicCommands(commands.Cog):
         exclude_tags="Comma separated tags to exclude, like dp,math.",
         exact_match="Only allow problems with exactly the included tags.",
         count="Number of problems to generate.",
-        date_limit="Filter by date 'DD/MM/YYYY, e.g., '01/01/2024' or '31/12/2023'."
+        date_limit="Filter by date 'DD/MM/YYYY, e.g., '01/01/2024' or '31/12/2023'.",
+        length="Filter by cached problem length: short, medium, or long."
     )
     #initialize to default values
     async def generate(
@@ -84,7 +85,8 @@ class BasicCommands(commands.Cog):
         exact_match: bool = False,
         count: app_commands.Range[int, 1, 10] = 1,
         time_direction: Optional[Literal["before", "after"]] = None,
-        date_limit: Optional[str] = None
+        date_limit: Optional[str] = None,
+        length: Optional[Literal["short", "medium", "long"]] = None
         
     ):
         # await interaction.response.send_message(
@@ -161,7 +163,10 @@ class BasicCommands(commands.Cog):
             contest_start_times = build_contest_start_time(contests)
             problemset = filter_by_date(problemset, target_timestamp, time_direction, contest_start_times)
         
-        
+        ####FILTER PROBLEM LENGTH
+
+        problemset = filter_by_length(problemset, length)
+
         #with lots of filters, it can get to the point where the number of valid problems are literally zero
         if len(problemset) == 0:
             await interaction.followup.send("No problems matched your filters. Try widening the rating range, removing tags, or changing the date filter.")

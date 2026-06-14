@@ -1,7 +1,7 @@
 import asyncio
-from scraper.problem_length_scraper import scrape_problem, ProblemScrapeError
+from scraper.problem_length_scraper import scrape_problem, ProblemScrapeError, load_problem_length, save_problem_length
 
-#old poc
+#old poc to test scraping on 1 problem
 """
 async def main():
     #https://codeforces.com/problemset/problem/1703/B
@@ -40,6 +40,8 @@ async def main():
     print(f"URL: {result['url']}")
     print(f"Word count: {result['word_count']}")
     print(f"Length: {result['length']}")
+
+    save_problem_length(result)
 
 #how???
 if __name__ == "__main__":

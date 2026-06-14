@@ -1,12 +1,24 @@
 import re
 import aiohttp
+import json
 from bs4 import BeautifulSoup
-from recommender.filters import get_problem_id
 from pathlib import Path
+
+
+
 
 class ProblemScrapeError(Exception):
     pass
 
+def get_problem_id(problem: dict) -> str | None:
+    contestId = problem.get("contestId")
+    index = problem.get("index")
+
+    if contestId is None or index is None:
+        return None
+
+    #unique problem identifier
+    return f"{contestId}{index}"
 
 ###PROBLEM LENGTH FILTERING IS ONLY SUPPORTED THROUGH LOCAL META DATA CACHE
 ###LIVE DATA SCRAPING IS RESTRICTED BY THE WEBSITE
@@ -39,7 +51,7 @@ async def fetch_problem_url(problem_url: str) -> str:
 
 
 ###REAL STUFF
-
+##scraping the data from the HTML code
 def extract_statement_text(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
 
@@ -111,6 +123,37 @@ def read_local_html(file_path: str | Path) -> str:
     if not path.exists():
         raise ProblemScrapeError(f"Local HTML file not found: {path}")
     return path.read_text(encoding="utf-8", errors="ignore")
+
+
+##pipe the plength data of a problem into p_length.json
+PROBLEM_LENGTH_FILE = Path("data/p_length.json")
+def load_problem_length() -> dict:
+    PROBLEM_LENGTH_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    if not PROBLEM_LENGTH_FILE.exists():
+        PROBLEM_LENGTH_FILE.write_text("{}", encoding="utf-8")
+        return {}
+    with PROBLEM_LENGTH_FILE.open("r", encoding="utf-8") as file:
+        try:
+            return json.load(file)
+        except json.JSONDecodeError:
+            #The file exists but is empty or contains invalid JSON.
+            #Return an empty dict so save_problem_length can overwrite it later.
+            return {}
+
+def save_problem_length(scrape_result: dict) -> None:
+    problem_lengths = load_problem_length()
+    problem_id = scrape_result["problem_id"]
+    problem_lengths[problem_id] = {
+        "word_count": scrape_result["word_count"],
+        "length": scrape_result["length"],
+        "url": scrape_result["url"],
+        "source": "manual_local_html"
+    }
+
+    with PROBLEM_LENGTH_FILE.open("w", encoding="utf-8") as file:
+        json.dump(problem_lengths, file, indent=4)
+
 
 
 
